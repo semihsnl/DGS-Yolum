@@ -1,0 +1,29 @@
+name: dgs_exam_app
+description: "DGS sınavına hazırlanmak için tam sınav provası ve net hesaplama uygulaması. Matematik ve Türkçe bölümleri ile pratik yapın."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.6.0
+dependencies:
+  audioplayers: ^5.2.1
+  google_fonts: ^6.2.1
+  provider: ^6.0.0
+  fl_chart: ^0.70.0
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  shared_preferences: ^2.0.0
+  url_launcher: ^6.3.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/data.json
+    - assets/alarm.mp3
