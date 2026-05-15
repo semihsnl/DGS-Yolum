@@ -1,5 +1,9 @@
 # DGS Yolum – Dijital Sınav Hazırlık Rehberi
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/b62a14fd-3a2f-413d-9db8-52563753e919" alt="DGS Yolum Uygulama Ekranları" width="100%">
+</p>
+
 **DGS Yolum**, Dikey Geçiş Sınavı (DGS) adaylarının hazırlık sürecini uçtan uca yönetmelerini sağlayan, veri odaklı ve kullanıcı deneyimi (UX) merkezli bir mobil platformdur. Önlisanstan lisansa geçiş sürecindeki adayların net takibi, hedef analizi ve resmi kaynaklara erişim ihtiyaçlarını tek bir modern arayüzde toplar.
 
 ---
@@ -34,7 +38,7 @@ Projeyi yerel makinenizde test etmek için:
 
 1.  **Repoyu klonlayın:**
     ```bash
-    git clone https://github.com/kullaniciadi/dgs-yolum.git
+    git clone [https://github.com/kullaniciadi/dgs-yolum.git](https://github.com/kullaniciadi/dgs-yolum.git)
     ```
 2.  **Bağımlılıkları senkronize edin:**
     ```bash
