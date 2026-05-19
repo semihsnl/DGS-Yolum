@@ -41,6 +41,31 @@ class _PuanHesaplamaPageState extends State<PuanHesaplamaPage> {
     });
   }
 
+  // YENİ: ÖBP Puanını anlık olarak hafızaya kaydetme fonksiyonu
+  Future<void> _saveObpOnly() async {
+    final prefs = await SharedPreferences.getInstance();
+    double? obpVal = double.tryParse(_obpPuanController.text);
+    
+    if (obpVal != null) {
+      // Sınır kontrollerini burada da yapalım
+      if (obpVal < 40) obpVal = 40;
+      if (obpVal > 80) obpVal = 80;
+      
+      String targetObp = obpVal.toStringAsFixed(1);
+      _obpPuanController.text = targetObp;
+      
+      // Ortak anahtara ('saved_obp') yazıyoruz
+      await prefs.setString('saved_obp', targetObp);
+      await prefs.setBool('saved_yerlesti', _isYerlesti);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("ÖBP Puanınız profilinize kaydedildi!")),
+        );
+      }
+    }
+  }
+
   void _hesapla() {
     setState(() {
       int matD = int.tryParse(_matDogru.text) ?? 0;
@@ -188,7 +213,26 @@ class _PuanHesaplamaPageState extends State<PuanHesaplamaPage> {
       ),
       child: Column(
         children: [
-          _buildInputField("ÖBP Puanı (40 - 80)", _obpPuanController),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(child: _buildInputField("ÖBP Puanı (40 - 80)", _obpPuanController)),
+              const SizedBox(width: 12),
+              // YENİ: Anlık ÖBP Kaydetme Butonu
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00D26A).withOpacity(0.15),
+                  foregroundColor: const Color(0xFF00D26A),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  side: BorderSide(color: const Color(0xFF00D26A).withOpacity(0.3)),
+                ),
+                onPressed: _saveObpOnly,
+                icon: const Icon(Icons.save_rounded, size: 18),
+                label: const Text("ÖBP'mi Kaydet", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
           const SizedBox(height: 8),
           CheckboxListTile(
             title: const Text("Önceki yıl yerleştim", style: TextStyle(color: Colors.white70, fontSize: 13)),

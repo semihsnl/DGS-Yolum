@@ -12,7 +12,7 @@ class FullExamPage extends StatefulWidget {
 
 class _FullExamPageState extends State<FullExamPage> {
   Timer? _timer;
-  int _secondsRemaining = 10; // TEST SÜRESİ
+  int _secondsRemaining = 8100; // 135 Dakika (Gerçek Sınav Süresi)
   bool _isRunning = false;
   final AudioPlayer _audioPlayer = AudioPlayer();
 
@@ -116,6 +116,19 @@ class _FullExamPageState extends State<FullExamPage> {
     );
   }
 
+  // GÜNCELLEME: Saniyeyi Saat:Dakika:Saniye formatına çeviren yardımcı metot
+  String _formatLongTime(int totalSeconds) {
+    int hours = totalSeconds ~/ 3600;
+    int minutes = (totalSeconds % 3600) ~/ 60;
+    int seconds = totalSeconds % 60;
+
+    String hoursStr = hours.toString().padLeft(2, '0');
+    String minutesStr = minutes.toString().padLeft(2, '0');
+    String secondsStr = seconds.toString().padLeft(2, '0');
+
+    return "$hoursStr:$minutesStr:$secondsStr";
+  }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -136,8 +149,11 @@ class _FullExamPageState extends State<FullExamPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text("${(_secondsRemaining ~/ 60).toString().padLeft(2, '0')}:${(_secondsRemaining % 60).toString().padLeft(2, '0')}", 
-                   style: const TextStyle(fontSize: 80, fontWeight: FontWeight.bold, color: Colors.white)),
+              // GÜNCELLEME: Yeni saatli format buraya bağlandı
+              Text(
+                _formatLongTime(_secondsRemaining), 
+                style: const TextStyle(fontSize: 70, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 2),
+              ),
               const SizedBox(height: 50),
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 _actionBtn(_isRunning ? null : _startTimer, "Başlat", Colors.green),

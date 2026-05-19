@@ -1,6 +1,6 @@
 {
-    "name": "dgs_exam_app",
-    "short_name": "dgs_exam_app",
+    "name": "DGS Yolum",
+    "short_name": "DGS Yolum",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

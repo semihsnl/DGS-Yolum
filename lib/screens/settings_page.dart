@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -29,7 +30,9 @@ class _SettingsPageState extends State<SettingsPage> {
               subtitle: "Eğitim bilgilerini güncelle",
               icon: Icons.person_outline_rounded,
               color: const Color(0xFF6C63FF),
-              onTap: () {},
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileSettingsPage()));
+              },
             ),
             
             const SizedBox(height: 25),
@@ -69,7 +72,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             
             const SizedBox(height: 40),
-            const Center(child: Text("DGS Hazırlık v1.0.4", style: TextStyle(color: Colors.white24, fontSize: 12))),
+            const Center(child: Text("DGS Yolum v1.0.4", style: TextStyle(color: Colors.white24, fontSize: 12))),
           ],
         ),
       ),
@@ -124,9 +127,146 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildDivider() => Divider(color: Colors.white.withOpacity(0.03), height: 1, indent: 55);
 }
 
+// --- GÜNCEL KULLANICI DETAYLARINI HAFIZAYA BAĞLAYAN SAYFA ---
+class ProfileSettingsPage extends StatefulWidget {
+  const ProfileSettingsPage({super.key});
+
+  @override
+  State<ProfileSettingsPage> createState() => _ProfileSettingsPageState();
+}
+
+class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
+  final _nameController = TextEditingController();
+  final _obpController = TextEditingController();
+  final _targetController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileData(); // Açılışta kalıcı verileri getir
+  }
+
+  Future<void> _loadProfileData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _nameController.text = prefs.getString('saved_name') ?? "Yazılım Mühendisi Adayı";
+      _obpController.text = prefs.getString('saved_obp') ?? "40.0"; // Diğer sayfa ile senkronize anahtar
+      _targetController.text = prefs.getString('saved_target') ?? "Bilgisayar Mühendisliği";
+    });
+  }
+
+  Future<void> _saveProfileData() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // ÖBP için sınır kontrolü yapalım (40-80 arası)
+    double obpVal = double.tryParse(_obpController.text) ?? 40.0;
+    if (obpVal < 40) obpVal = 40;
+    if (obpVal > 80) obpVal = 80;
+    String formattedObp = obpVal.toStringAsFixed(1);
+
+    await prefs.setString('saved_name', _nameController.text);
+    await prefs.setString('saved_obp', formattedObp); // Ortak kilit veri buraya yazılıyor
+    await prefs.setString('saved_target', _targetController.text);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Profil ve ÖBP bilgileriniz başarıyla güncellendi!")),
+      );
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _obpController.dispose();
+    _targetController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F111A),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text("Profil ve ÖBP Ayarları", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Center(
+              child: CircleAvatar(
+                radius: 45,
+                backgroundColor: Color(0xFF1C1E26),
+                child: Icon(Icons.person, color: Color(0xFF6C63FF), size: 45),
+              ),
+            ),
+            const SizedBox(height: 30),
+            _buildInputField("Ad Soyad", _nameController, TextInputType.text),
+            const SizedBox(height: 15),
+            _buildInputField("ÖBP Puanı (40 - 80 Arası)", _obpController, TextInputType.number),
+            const SizedBox(height: 15),
+            _buildInputField("Hedef Bölüm / Üniversite", _targetController, TextInputType.text),
+            const SizedBox(height: 35),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6C63FF),
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                ),
+                onPressed: _saveProfileData,
+                child: const Text("Değişiklikleri Kaydet", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputField(String label, TextEditingController controller, TextInputType type) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          keyboardType: type,
+          style: const TextStyle(color: Colors.white, fontSize: 14),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: const Color(0xFF1C1E26),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 // --- RESMİ KAYNAKLAR ALT SAYFASI ---
 class OfficialSourcesPage extends StatelessWidget {
   const OfficialSourcesPage({super.key});
+
+  // URL'leri güvenli şekilde açmak için yardımcı fonksiyon
+  Future<void> _launchURL(BuildContext context, String urlString) async {
+    final Uri url = Uri.parse(urlString);
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Bağlantı açılamadı.")),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -140,10 +280,26 @@ class OfficialSourcesPage extends StatelessWidget {
           const SizedBox(height: 8),
           const Text("Aşağıdaki linkler ÖSYM'nin resmi sitesine yönlendirir.", style: TextStyle(color: Colors.white38, fontSize: 13)),
           const SizedBox(height: 25),
-          _buildSourceCard("DGS Çıkmış Sorular", "ÖSYM DGS arşivine göz atın", Icons.help_outline),
-          _buildSourceCard("DGS Kılavuzu", "Güncel başvuru ve geçiş tablosu", Icons.menu_book),
-          _buildSourceCard("2024 DGS Soru Kitapçığı", "Son yapılan sınavın PDF dosyası", Icons.description),
-          _buildSourceCard("ÖSYM Ana Sayfa", "Resmi duyurular ve takvim", Icons.language),
+          
+          _buildSourceCard(
+            title: "DGS Çıkmış Sorular", 
+            sub: "ÖSYM DGS arşivine göz atın", 
+            icon: Icons.help_outline,
+            onTap: () => _launchURL(context, "https://www.osym.gov.tr/TR,33345/2025.html"),
+          ),
+          _buildSourceCard(
+            title: "DGS Kılavuzu", 
+            sub: "Güncel başvuru ve geçiş tablosu", 
+            icon: Icons.menu_book,
+            onTap: () => _launchURL(context, "https://www.osym.gov.tr/TR,34085/2026-dgs-kilavuz-ve-basvuru-bilgileri.html"),
+          ),
+          _buildSourceCard(
+            title: "ÖSYM DGS Ana Sayfa", 
+            sub: "Resmi duyurular ve takvim", 
+            icon: Icons.language,
+            onTap: () => _launchURL(context, "https://www.osym.gov.tr/TR,8862/hakkinda.html"),
+          ),
+          
           const SizedBox(height: 30),
           Container(
             padding: const EdgeInsets.all(15),
@@ -163,21 +319,27 @@ class OfficialSourcesPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSourceCard(String title, String sub, IconData icon) {
+  Widget _buildSourceCard({required String title, required String sub, required IconData icon, required VoidCallback onTap}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(color: const Color(0xFF1C1E26), borderRadius: BorderRadius.circular(15)),
-      child: Row(
-        children: [
-          CircleAvatar(backgroundColor: Colors.blue.withOpacity(0.1), child: Icon(icon, color: Colors.blue, size: 20)),
-          const SizedBox(width: 15),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            Text(sub, style: const TextStyle(color: Colors.white38, fontSize: 11)),
-          ])),
-          const Icon(Icons.open_in_new, color: Colors.white24, size: 18),
-        ],
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(15),
+        child: Container(
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(color: const Color(0xFF1C1E26), borderRadius: BorderRadius.circular(15)),
+          child: Row(
+            children: [
+              CircleAvatar(backgroundColor: Colors.blue.withOpacity(0.1), child: Icon(icon, color: Colors.blue, size: 20)),
+              const SizedBox(width: 15),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                Text(sub, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+              ])),
+              const Icon(Icons.open_in_new, color: Colors.white24, size: 18),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -304,7 +466,7 @@ class TermsPage extends StatelessWidget {
   }
 }
 
-// --- GİZLİLİK POLİTİKASI ---
+// --- GIZLILIK POLITIKASI ---
 class PrivacyPage extends StatelessWidget {
   const PrivacyPage({super.key});
 

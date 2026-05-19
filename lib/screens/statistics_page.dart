@@ -95,10 +95,6 @@ class _StatisticsPageState extends State<StatisticsPage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF0A0E27),
         elevation: 0,
-        title: const Text(
-          'Gelişim Grafiği',
-          style: TextStyle(color: Color(0xFF00D26A), fontWeight: FontWeight.bold),
-        ),
         centerTitle: true,
         actions: [
           IconButton(
