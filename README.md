@@ -1,7 +1,7 @@
 # DGS Yolum – Dijital Sınav Hazırlık Rehberi
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/b62a14fd-3a2f-413d-9db8-52563753e919" alt="DGS Yolum Uygulama Ekranları" width="100%">
+  <img src="https://github.com/user-attachments/assets/39516626-4022-496d-bd69-4e1611fc4e1f" alt="DGS Yolum Uygulama Ekranları" width="100%">
 </p>
 
 **DGS Yolum**, Dikey Geçiş Sınavı (DGS) adaylarının hazırlık sürecini uçtan uca yönetmelerini sağlayan, veri odaklı ve kullanıcı deneyimi (UX) merkezli bir mobil platformdur. Önlisanstan lisansa geçiş sürecindeki adayların net takibi, hedef analizi ve resmi kaynaklara erişim ihtiyaçlarını tek bir modern arayüzde toplar.
