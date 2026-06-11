@@ -32,24 +32,5 @@ Bu proje, bir mühendislik bakış açısıyla aşağıdaki teknolojiler ve yön
 
 ---
 
-## ⚙️ Kurulum ve Çalıştırma
-
-Projeyi yerel makinenizde test etmek için:
-
-1.  **Repoyu klonlayın:**
-    ```bash
-    git clone [https://github.com/kullaniciadi/dgs-yolum.git](https://github.com/kullaniciadi/dgs-yolum.git)
-    ```
-2.  **Bağımlılıkları senkronize edin:**
-    ```bash
-    flutter pub get
-    ```
-3.  **Uygulamayı başlatın:**
-    ```bash
-    flutter run
-    ```
-
----
-
 ## ✒️ Geliştirici Notu
 **DGS Yolum**, sadece fonksiyonel bir araç değil, aynı zamanda Flutter ekosisteminde **Özel Widget Mimarisi**, **Durum Yönetimi (State Management)** ve **Veri Görselleştirme** üzerine odaklanılmış bir projedir. Özellikle kullanıcı arayüzündeki piksel hassasiyetli düzenlemeler, platformun profesyonel standartlara uygunluğunu hedeflemektedir.
