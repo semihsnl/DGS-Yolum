@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PuanHesaplamaPage extends StatefulWidget {
@@ -41,13 +42,13 @@ class _PuanHesaplamaPageState extends State<PuanHesaplamaPage> {
     });
   }
 
-  // YENİ: ÖBP Puanını anlık olarak hafızaya kaydetme fonksiyonu
+  // ÖBP Puanını anlık olarak hafızaya kaydetme fonksiyonu
   Future<void> _saveObpOnly() async {
     final prefs = await SharedPreferences.getInstance();
     double? obpVal = double.tryParse(_obpPuanController.text);
     
     if (obpVal != null) {
-      // Sınır kontrollerini burada da yapalım
+      // Sınır kontrollerini güvene alalım
       if (obpVal < 40) obpVal = 40;
       if (obpVal > 80) obpVal = 80;
       
@@ -63,6 +64,11 @@ class _PuanHesaplamaPageState extends State<PuanHesaplamaPage> {
           const SnackBar(content: Text("ÖBP Puanınız profilinize kaydedildi!")),
         );
       }
+    } else {
+      // Eğer alan boş bırakıldıysa veya geçersizse varsayılan alt sınırı ata ve kaydet
+      _obpPuanController.text = "40.0";
+      await prefs.setString('saved_obp', "40.0");
+      await prefs.setBool('saved_yerlesti', _isYerlesti);
     }
   }
 
@@ -72,7 +78,8 @@ class _PuanHesaplamaPageState extends State<PuanHesaplamaPage> {
       int matY = int.tryParse(_matYanlis.text) ?? 0;
       int sozD = int.tryParse(_sozDogru.text) ?? 0;
       int sozY = int.tryParse(_sozYanlis.text) ?? 0;
-      double obpVal = double.tryParse(_obpPuanController.text) ?? 40;
+      
+      double obpVal = double.tryParse(_obpPuanController.text) ?? 40.0;
 
       // Toplam 50 Sınırı Kontrolü
       if (matD + matY > 50) {
@@ -104,7 +111,7 @@ class _PuanHesaplamaPageState extends State<PuanHesaplamaPage> {
       double obpKatsayisi = _isYerlesti ? 0.45 : 0.6;
       double obpEtkisi = obpVal * obpKatsayisi;
 
-      // 2025 Güncel Katsayılar ve Taban Puanlar
+      // Güncel Katsayılar ve Taban Puanlar
       _sayPuan = (_sayNet * 3.431) + (_sozNet * 0.584) + obpEtkisi + 144.017;
       _sozPuan = (_sayNet * 0.677) + (_sozNet * 2.932) + obpEtkisi + 126.070;
       _eaPuan = (_sayNet * 2.054) + (_sozNet * 1.758) + obpEtkisi + 135.044;
@@ -178,9 +185,9 @@ class _PuanHesaplamaPageState extends State<PuanHesaplamaPage> {
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: _buildInputField("Doğru", d)),
+              Expanded(child: _buildInputField("Doğru", d, isObp: false)),
               const SizedBox(width: 15),
-              Expanded(child: _buildInputField("Yanlış", y)),
+              Expanded(child: _buildInputField("Yanlış", y, isObp: false)),
             ],
           ),
         ],
@@ -188,11 +195,28 @@ class _PuanHesaplamaPageState extends State<PuanHesaplamaPage> {
     );
   }
 
-  Widget _buildInputField(String label, TextEditingController controller) {
+  Widget _buildInputField(String label, TextEditingController controller, {required bool isObp}) {
     return TextField(
       controller: controller,
-      keyboardType: TextInputType.number,
+      // 🎯 ÖBP alanıysa ondalıklı klavye, değilse sadece tam sayı klavyesi açılır
+      keyboardType: isObp ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.number,
       style: const TextStyle(color: Colors.white),
+      // 🎯 Sadece rakamları ve noktayı kabul eden filtreleme mimarisi
+      inputFormatters: [
+        isObp 
+          ? FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')) // ÖBP için rakam ve nokta izni
+          : FilteringTextInputFormatter.digitsOnly,             // Doğru/Yanlış için sadece tam sayı
+      ],
+      onChanged: (value) {
+        if (isObp && value.isNotEmpty) {
+          double? currentVal = double.tryParse(value);
+          // Kullanıcı anlık olarak 80'den büyük yazarsa otomatik 80'e çeker
+          if (currentVal != null && currentVal > 80) {
+            controller.text = "80";
+            controller.selection = TextSelection.fromPosition(const TextPosition(offset: 2));
+          }
+        }
+      },
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
@@ -216,9 +240,8 @@ class _PuanHesaplamaPageState extends State<PuanHesaplamaPage> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Expanded(child: _buildInputField("ÖBP Puanı (40 - 80)", _obpPuanController)),
+              Expanded(child: _buildInputField("ÖBP Puanı (40 - 80)", _obpPuanController, isObp: true)),
               const SizedBox(width: 12),
-              // YENİ: Anlık ÖBP Kaydetme Butonu
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF00D26A).withOpacity(0.15),

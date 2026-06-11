@@ -6,7 +6,10 @@ version: 1.0.0+1
 
 environment:
   sdk: ^3.6.0
+
 dependencies:
+  flutter_localizations:
+    sdk: flutter
   audioplayers: ^5.2.1
   google_fonts: ^6.2.1
   provider: ^6.0.0
@@ -17,6 +20,7 @@ dependencies:
   shared_preferences: ^2.0.0
   url_launcher: ^6.3.2
   flutter_launcher_icons: ^0.14.4
+  google_mobile_ads: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -31,12 +35,18 @@ flutter:
     - assets/alarm.mp3
 
 flutter_launcher_icons:
+  # Android Ayarları
+  android: true
+  image_path_android: "assets/images/logo_android.png" # 🎯 Pakete kaynağı açıkça gösterdik
   adaptive_icon_background: "#0D1A29" 
-  adaptive_icon_foreground: "assets/images/logo.png"
-  android: "launcher_icon"
+  adaptive_icon_foreground: "assets/images/logo_android.png"
+  remove_alpha_ios: true
+  
+  # iOS Ayarları
   ios: true
-  image_path: "assets/images/logo.png"
+  image_path_ios: "assets/images/logo_ios.png"
+  
+  # Web Ayarları
   web:
     generate: true
-    image_path: "assets/images/logo.png"
-  
+    image_path: "assets/images/logo_ios.png"

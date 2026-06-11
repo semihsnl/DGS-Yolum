@@ -1,4 +1,4 @@
-package com.example.dgs_exam_app
+package com.semihsenel.dgsyolum
 
 import io.flutter.embedding.android.FlutterActivity
 

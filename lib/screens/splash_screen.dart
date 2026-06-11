@@ -87,7 +87,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     width: 180,
                     height: 180,
                     child: Image.asset(
-                      'assets/images/logo.png',
+                      'assets/images/logo_android.png',
                       fit: BoxFit.contain,
                       frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
                         if (wasSynchronouslyLoaded) return child;

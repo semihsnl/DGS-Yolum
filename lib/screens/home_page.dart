@@ -1,5 +1,7 @@
+import 'dart:async'; // unawaited ve reklam akışı için eklendi
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart'; // Reklam paketi importu
 import 'puan_hesaplama_page.dart';
 import 'full_exam_page.dart';
 import 'custom_mode_screen.dart';
@@ -9,6 +11,7 @@ import 'base_points_page.dart';
 import 'settings_page.dart';
 import 'preferred_list_page.dart'; // Tercih listesi importu
 import '../models/exam_result.dart';
+import '../ad_helper.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -22,10 +25,43 @@ class _HomePageState extends State<HomePage> {
   List<ExamResult> _recentExams = [];
   bool _isLoading = true;
 
+  // Reklam durum değişkenleri
+  BannerAd? _bannerAd;
+  bool _isBannerAdReady = false;
+
   @override
   void initState() {
     super.initState();
     _loadData();
+    _initBannerAd(); // Reklamı başlatan fonksiyon tetiklendi
+  }
+
+  // Reklamı yükleyen yardımcı fonksiyon
+  void _initBannerAd() {
+    BannerAd(
+      adUnitId: AdHelper.bannerAdUnitId,
+      request: const AdRequest(),
+      size: AdSize.banner,
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            _bannerAd = ad as BannerAd;
+            _isBannerAdReady = true;
+          });
+        },
+        onAdFailedToLoad: (ad, err) {
+          print('Reklam yükleme hatası: ${err.message}');
+          _isBannerAdReady = false;
+          ad.dispose();
+        },
+      ),
+    ).load();
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose(); // Bellek sızıntısını önlemek için reklam temizliği
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -67,12 +103,25 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F111A),
-      body: _getPage(_selectedIndex),
+      body: Column(
+        children: [
+          Expanded(
+            child: _getPage(_selectedIndex),
+          ),
+          if (_isBannerAdReady && _bannerAd != null)
+            Container(
+              alignment: Alignment.center,
+              width: _bannerAd!.size.width.toDouble(),
+              height: _bannerAd!.size.height.toDouble(),
+              margin: const EdgeInsets.only(bottom: 5),
+              child: AdWidget(ad: _bannerAd!),
+            ),
+        ],
+      ),
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
-  // --- ANA SAYFA EKRANI (TEMİZLENDİ & ODAKLANDI) ---
   Widget _buildHomeScreen() {
     return SafeArea(
       child: RefreshIndicator(
@@ -91,7 +140,7 @@ class _HomePageState extends State<HomePage> {
                 _buildOsymTimeline(),
                 const SizedBox(height: 25),
                 _buildNetGraphSection(),
-                const SizedBox(height: 30), // Alt boşluk dengelendi
+                const SizedBox(height: 30),
               ],
             ),
           ),
@@ -100,7 +149,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // --- YENİ KATEGORİLER EKRANI (MUAZZAM GRUPLAMA) ---
   Widget _buildCategoriesScreen() {
     return SafeArea(
       child: SingleChildScrollView(
@@ -109,15 +157,13 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 30),
-            
-            // GRUP 1: REHBER VE HESAPLAMA
             _buildSectionTitle("REHBER VE HESAPLAMA"),
             const SizedBox(height: 12),
             _buildMainButton(
               title: "Taban Sıralamalar ve Puanlar",
-              subtitle: "Son 5 yılın üniversite ve bölüm verileri",
+              subtitle: "Son 5 yılın taban puanlarını ve sıralamalarını gör",
               icon: Icons.account_balance_rounded,
-              color: const Color(0xFF00D26A), // Yeşil
+              color: const Color(0xFF00D26A),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const BasePointsPage())),
             ),
             const SizedBox(height: 12),
@@ -125,20 +171,17 @@ class _HomePageState extends State<HomePage> {
               title: "Puan Hesapla",
               subtitle: "DGS puanını anında öğren",
               icon: Icons.calculate_rounded,
-              color: const Color(0xFF6C63FF), // Mor
+              color: const Color(0xFF6C63FF),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PuanHesaplamaPage())),
             ),
-            
             const SizedBox(height: 28),
-            
-            // GRUP 2: SINAV MODLARI
             _buildSectionTitle("SINAV MODLARI"),
             const SizedBox(height: 12),
             _buildMainButton(
               title: "Tam Sınav",
-              subtitle: "135 dk GERÇEK SINAV PROVASI",
+              subtitle: "135 dk gerçek sınav deneyimi yaşa",
               icon: Icons.timer_outlined,
-              color: const Color(0xFF6C63FF), // Mor
+              color: const Color(0xFF6C63FF),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const FullExamPage())),
             ),
             const SizedBox(height: 12),
@@ -146,20 +189,17 @@ class _HomePageState extends State<HomePage> {
               title: "Özel Mod",
               subtitle: "Süreleri kendine göre ayarla",
               icon: Icons.tune_rounded,
-              color: const Color(0xFFFF9F43), // Turuncu
+              color: const Color(0xFFFF9F43),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CustomModeScreen())),
             ),
-            
             const SizedBox(height: 28),
-            
-            // GRUP 3: ARŞİV VE FAVORİLER
             _buildSectionTitle("ARŞİV VE FAVORİLER"),
             const SizedBox(height: 12),
             _buildMainButton(
               title: "Tercih Listem",
               subtitle: "Favori bölümlerini yönet",
               icon: Icons.format_list_numbered_rounded,
-              color: Colors.amber, // Sarı
+              color: Colors.amber,
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PreferredListPage())),
             ),
             const SizedBox(height: 12),
@@ -167,17 +207,229 @@ class _HomePageState extends State<HomePage> {
               title: "Geçmiş Sınavlarım",
               subtitle: "Eski sonuçlarını ve gelişimini gör",
               icon: Icons.history_rounded,
-              color: const Color(0xFF9F43FF), // Açık Mor
+              color: const Color(0xFF9F43FF),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ExamHistoryPage())),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: () => _showAddPastExamSheet(context),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1C1E26),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.4), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(color: const Color(0xFF6C63FF).withOpacity(0.05), blurRadius: 10, spreadRadius: 1)
+                  ],
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.add_circle_outline_rounded, color: Color(0xFF6C63FF), size: 22),
+                    SizedBox(width: 10),
+                    Text(
+                      "Geçmiş Deneme Neti Ekle",
+                      style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
           ],
         ),
       ),
     );
   }
 
-  // --- ÖSYM TARİH ŞERİDİ ---
+  void _showAddPastExamSheet(BuildContext context) {
+    DateTime selectedDate = DateTime.now();
+    final mathCorrectController = TextEditingController();
+    final mathWrongController = TextEditingController();
+    final turkCorrectController = TextEditingController();
+    final turkWrongController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF131520),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter sheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                top: 25,
+                left: 20,
+                right: 20,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+                    ),
+                    const SizedBox(height: 20),
+                    const Center(
+                      child: Text("Geçmiş Sınav Sonucu Ekle", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(height: 25),
+                    
+                    const Text("Sınav Tarihi", style: TextStyle(color: Colors.white60, fontSize: 12, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: () async {
+                        final DateTime? picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now(),
+                          // 🎯 KRİTİK GÜNCELLEME: Takvimi Türkçe yapmak için locale tanımlandı
+                          locale: const Locale('tr', 'TR'),
+                          builder: (context, child) {
+                            return Theme(
+                              data: Theme.of(context).copyWith(
+                                colorScheme: const ColorScheme.dark(
+                                  primary: Color(0xFF6C63FF),
+                                  onPrimary: Colors.white,
+                                  surface: Color(0xFF1C1E26),
+                                  onSurface: Colors.white,
+                                ),
+                              ),
+                              child: child!,
+                            );
+                          },
+                        );
+                        if (picked != null) {
+                          sheetState(() {
+                            selectedDate = picked;
+                          });
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(color: const Color(0xFF1C1E26), borderRadius: BorderRadius.circular(15)),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
+                              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+                            ),
+                            const Icon(Icons.calendar_today_rounded, color: Color(0xFF6C63FF), size: 18),
+                          ],
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    const Text("MATEMATİK (50 Soru)", style: TextStyle(color: Color(0xFF6C63FF), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(child: _buildSheetTextField("Doğru", mathCorrectController)),
+                        const SizedBox(width: 15),
+                        Expanded(child: _buildSheetTextField("Yanlış", mathWrongController)),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    const Text("TÜRKÇE (50 Soru)", style: TextStyle(color: Color(0xFFFF9F43), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(child: _buildSheetTextField("Doğru", turkCorrectController)),
+                        const SizedBox(width: 15),
+                        Expanded(child: _buildSheetTextField("Yanlış", turkWrongController)),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 30),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6C63FF),
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                        ),
+                        onPressed: () async {
+                          int matD = int.tryParse(mathCorrectController.text) ?? 0;
+                          int matY = int.tryParse(mathWrongController.text) ?? 0;
+                          int turD = int.tryParse(turkCorrectController.text) ?? 0;
+                          int turY = int.tryParse(turkWrongController.text) ?? 0;
+
+                          if ((matD + matY) > 50 || (turD + turY) > 50) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Soru sayıları 50'yi geçemez!")),
+                            );
+                            return;
+                          }
+
+                          double matNet = matD - (matY * 0.25);
+                          double turNet = turD - (turY * 0.25);
+
+                          final newResult = ExamResult(
+                            mode: "Özel Mod", // Grafik ve arayüz uyumu için özel mod olarak setlendi
+                            mathDuration: 75,
+                            turkishDuration: 60,
+                            mathNet: matNet,
+                            turkishNet: turNet,
+                            mathCorrect: matD,
+                            mathWrong: matY,
+                            turkishCorrect: turD,
+                            turkishWrong: turY,
+                            dateTime: selectedDate,
+                            name: "Manuel Eklenen Deneme",
+                          );
+
+                          await ExamResultStorage().addExamResult(newResult);
+                          
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Geçmiş deneme başarısıyla arşivlendi!")),
+                            );
+                          }
+                          _loadData();
+                        },
+                        child: const Text("Sonucu Kaydet", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+                  ],
+                ),
+              ),
+            );
+          }
+        );
+      },
+    );
+  }
+
+  Widget _buildSheetTextField(String label, TextEditingController controller) {
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      style: const TextStyle(color: Colors.white, fontSize: 14),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+        filled: true,
+        fillColor: const Color(0xFF1C1E26),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+    );
+  }
+
   Widget _buildOsymTimeline() {
     final now = DateTime.now();
     final DateTime appStart = DateTime(2026, 5, 15, 10, 0);
@@ -263,14 +515,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildTimelineItem({required String title, required Widget content, required bool isCurrentActive, required bool isNextTarget, required bool isLast}) {
-    Color dotColor;
-    if (isCurrentActive) {
-      dotColor = const Color(0xFF00D26A);
-    } else if (isNextTarget) {
-      dotColor = const Color(0xFF6C63FF);
-    } else {
-      dotColor = Colors.white.withOpacity(0.05);
-    }
+    Color dotColor = isCurrentActive ? const Color(0xFF00D26A) : (isNextTarget ? const Color(0xFF6C63FF) : Colors.white.withOpacity(0.05));
     Color titleColor = (isCurrentActive || isNextTarget) ? Colors.white : Colors.white.withOpacity(0.3);
 
     return Row(
@@ -351,7 +596,7 @@ class _HomePageState extends State<HomePage> {
           Icon(Icons.bar_chart_rounded, color: Colors.white.withOpacity(0.1), size: 50),
           const SizedBox(height: 10),
           const Text("Henüz deneme çözmedin.\nNet takibi için sınavlara başla!", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 13, height: 1.5)),
-          TextButton(onPressed: () => setState(() => _selectedIndex = 1), child: const Text("Sınav Modlarını Gör", style: TextStyle(color: Color(0xFF6C63FF))))
+          TextButton(onPressed: () => setState(() => _selectedIndex = 1), child: const Text("Sınav Modlarını Gör / Net Ekle", style: TextStyle(color: Color(0xFF6C63FF))))
         ],
       ),
     );

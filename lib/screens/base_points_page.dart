@@ -137,7 +137,6 @@ class _BasePointsPageState extends State<BasePointsPage> {
           } 
           
           if (isVakifSelected && itemType == "Vakıf") {
-             // Vakıf seçiliyse, alt burs tiplerinden birine uyup uymadığına bak
              bool bursMatch = _selectedVakifSubTypes.any((sub) => bolumName.contains(sub));
              if (bursMatch) typeMatch = true;
           }
@@ -177,11 +176,12 @@ class _BasePointsPageState extends State<BasePointsPage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF0F111A),
         elevation: 0,
-        title: const Text("Taban Sıralama ve Puanlar", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        toolbarHeight: 45,
+        title: const Text("Taban Sıralama ve Puanlar", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.format_list_numbered, color: Colors.amber),
+            icon: const Icon(Icons.format_list_numbered, color: Colors.amber, size: 20),
             onPressed: () async {
               await Navigator.push(context, MaterialPageRoute(builder: (context) => const PreferredListPage()));
               _loadFavorites();
@@ -195,15 +195,32 @@ class _BasePointsPageState extends State<BasePointsPage> {
             children: [
               _buildAutocompleteSearch(),
               _buildSelectedChips(),
-              _buildFilterArea(),
-              _buildLanguageFilters(),
+              
+              // 🎯 1. Satır: Üniversite Türü Filtresi (Tümü, Devlet, Vakıf)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                child: Container(
+                  alignment: Alignment.centerLeft,
+                  child: _buildFilterArea(),
+                ),
+              ),
+
+              // 🎯 2. Satır: Dil Filtresi (Türkçe, İngilizce) - Hemen altına tam satır olarak eklendi
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                child: Container(
+                  alignment: Alignment.centerLeft,
+                  child: _buildLanguageFilters(),
+                ),
+              ),
+              
               _buildSortingBar(),
               _buildInfoBanner(),
               Expanded(
                 child: _filteredData.isEmpty 
                 ? const Center(child: Text("Sonuç bulunamadı.", style: TextStyle(color: Colors.white54)))
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     itemCount: _filteredData.length,
                     itemBuilder: (context, index) => _buildUniDetailCard(_filteredData[index]),
                   ),
@@ -223,7 +240,7 @@ class _BasePointsPageState extends State<BasePointsPage> {
     Color typeColor = data['tur'].toString().contains("SAY") ? Colors.blueAccent : (data['tur'].toString().contains("SÖZ") ? Colors.orangeAccent : Colors.teal);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(color: const Color(0xFF1C1E26), borderRadius: BorderRadius.circular(15)),
       child: IntrinsicHeight(
         child: Row(
@@ -269,14 +286,18 @@ class _BasePointsPageState extends State<BasePointsPage> {
             
             Container(
               width: 165, 
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
               decoration: BoxDecoration(color: Colors.black.withOpacity(0.3), borderRadius: const BorderRadius.only(topRight: Radius.circular(15), bottomRight: Radius.circular(15))),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(y.length > 4 ? 4 : y.length, (i) {
+                  // 🛡️ MANTIK FILTRESI: Çekim hatası olan uçuk gelecek yılları (2027 v.b) çalışma zamanında gizler.
+                  if (int.tryParse(y[i]) != null && int.parse(y[i]) > 2026) {
+                    return const SizedBox.shrink();
+                  }
                   bool isNewest = i == 0;
                   return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2.5),
+                    padding: const EdgeInsets.symmetric(vertical: 2.0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -298,7 +319,7 @@ class _BasePointsPageState extends State<BasePointsPage> {
 
   Widget _buildAutocompleteSearch() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: Row(
         children: [
           Expanded(
@@ -351,9 +372,10 @@ class _BasePointsPageState extends State<BasePointsPage> {
                   controller: controller, focusNode: node,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
                     hintText: "Bölüm veya üniversite yazın...",
-                    hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
-                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                    hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                    prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 18),
                     filled: true, fillColor: const Color(0xFF1C1E26),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
                   ),
@@ -361,7 +383,12 @@ class _BasePointsPageState extends State<BasePointsPage> {
               },
             ),
           ),
-          IconButton(onPressed: _showCityPicker, icon: const Icon(Icons.location_on_outlined, color: Colors.grey)),
+          IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: _showCityPicker, 
+            icon: const Icon(Icons.location_on_outlined, color: Colors.grey, size: 20)
+          ),
         ],
       ),
     );
@@ -370,14 +397,17 @@ class _BasePointsPageState extends State<BasePointsPage> {
   Widget _buildSelectedChips() {
     if (_selectedFilters.isEmpty) return const SizedBox.shrink();
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       width: double.infinity,
       child: Wrap(
-        spacing: 6,
+        spacing: 4,
+        runSpacing: 2,
         children: [
           ..._selectedFilters.map((f) => Chip(
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            padding: EdgeInsets.zero,
             backgroundColor: f.isCity ? Colors.purple.withOpacity(0.2) : (f.isUniversity ? Colors.blue.withOpacity(0.2) : Colors.green.withOpacity(0.2)),
-            label: Text(f.name, style: const TextStyle(color: Colors.white, fontSize: 10)),
+            label: Text(f.name, style: const TextStyle(color: Colors.white, fontSize: 9)),
             onDeleted: () { setState(() => _selectedFilters.remove(f)); _filterAndSortData(); },
           )),
         ],
@@ -386,18 +416,15 @@ class _BasePointsPageState extends State<BasePointsPage> {
   }
 
   Widget _buildFilterArea() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            _buildMainTypeChip("Tümü"),
-            _buildMainTypeChip("Devlet"),
-            _buildMainTypeChip("Vakıf"),
-            if (_selectedMainTypes.contains("Vakıf")) ...["Burslu", "%50", "%25", "Ücretli"].map((s) => _buildVakifSubChip(s)),
-          ],
-        ),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _buildMainTypeChip("Tümü"),
+          _buildMainTypeChip("Devlet"),
+          _buildMainTypeChip("Vakıf"),
+          if (_selectedMainTypes.contains("Vakıf")) ...["Burslu", "%50", "%25", "Ücretli"].map((s) => _buildVakifSubChip(s)),
+        ],
       ),
     );
   }
@@ -405,9 +432,12 @@ class _BasePointsPageState extends State<BasePointsPage> {
   Widget _buildMainTypeChip(String label) {
     bool isSelected = _selectedMainTypes.contains(label);
     return Padding(
-      padding: const EdgeInsets.only(right: 6),
+      padding: const EdgeInsets.only(right: 4),
       child: FilterChip(
-        label: Text(label),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        label: Text(label, style: const TextStyle(fontSize: 10)),
         selected: isSelected,
         onSelected: (val) {
           setState(() {
@@ -430,10 +460,11 @@ class _BasePointsPageState extends State<BasePointsPage> {
   Widget _buildVakifSubChip(String label) {
     bool isSelected = _selectedVakifSubTypes.contains(label);
     return Padding(
-      padding: const EdgeInsets.only(left: 4),
+      padding: const EdgeInsets.only(left: 2),
       child: FilterChip(
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         visualDensity: VisualDensity.compact,
-        label: Text(label, style: const TextStyle(fontSize: 10)),
+        label: Text(label, style: const TextStyle(fontSize: 9)),
         selected: isSelected,
         onSelected: (v) { setState(() { v ? _selectedVakifSubTypes.add(label) : _selectedVakifSubTypes.remove(label); }); _filterAndSortData(); },
         selectedColor: Colors.amber,
@@ -444,19 +475,22 @@ class _BasePointsPageState extends State<BasePointsPage> {
   }
 
   Widget _buildLanguageFilters() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
         children: ["Türkçe", "İngilizce"].map((l) => Padding(
-          padding: const EdgeInsets.only(left: 6),
+          padding: const EdgeInsets.only(right: 4), // Yan yana butonlar arası ideal boşluk
           child: FilterChip(
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: 6),
             label: Text(l, style: const TextStyle(fontSize: 10)),
             selected: _selectedLanguages.contains(l),
             onSelected: (v) { setState(() => v ? _selectedLanguages.add(l) : _selectedLanguages.remove(l)); _filterAndSortData(); },
             selectedColor: Colors.blueAccent,
             backgroundColor: const Color(0xFF1C1E26),
-            labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            labelStyle: TextStyle(color: _selectedLanguages.contains(l) ? Colors.black : Colors.grey, fontWeight: FontWeight.bold),
           ),
         )).toList(),
       ),
@@ -465,7 +499,8 @@ class _BasePointsPageState extends State<BasePointsPage> {
 
   Widget _buildSortingBar() {
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 2),
+      height: 30,
       decoration: BoxDecoration(color: const Color(0xFF1C1E26), borderRadius: BorderRadius.circular(10)),
       child: Row(
         children: [
@@ -477,10 +512,21 @@ class _BasePointsPageState extends State<BasePointsPage> {
   }
 
   Widget _buildSortButton(String l, SortType s, VoidCallback t) {
-    return Expanded(child: InkWell(onTap: t, child: Padding(padding: const EdgeInsets.all(12), child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Text(l, style: TextStyle(color: s == SortType.none ? Colors.grey : Colors.white, fontSize: 11, fontWeight: FontWeight.bold)), Icon(s == SortType.descending ? Icons.arrow_drop_down : s == SortType.ascending ? Icons.arrow_drop_up : Icons.unfold_more, size: 14, color: s == SortType.none ? Colors.grey : Colors.green)]))));
+    return Expanded(
+      child: InkWell(
+        onTap: t, 
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center, 
+          children: [
+            Text(l, style: TextStyle(color: s == SortType.none ? Colors.grey : Colors.white, fontSize: 10, fontWeight: FontWeight.bold)), 
+            Icon(s == SortType.descending ? Icons.arrow_drop_down : s == SortType.ascending ? Icons.arrow_drop_up : Icons.unfold_more, size: 14, color: s == SortType.none ? Colors.grey : Colors.green)
+          ]
+        )
+      )
+    );
   }
 
-  Widget _buildInfoBanner() => const Padding(padding: EdgeInsets.only(right: 20, bottom: 4), child: Align(alignment: Alignment.centerRight, child: Text("Yıl | Kont. | Puan | Sıra", style: TextStyle(color: Colors.grey, fontSize: 9, fontWeight: FontWeight.bold))));
+  Widget _buildInfoBanner() => const Padding(padding: EdgeInsets.only(right: 20, bottom: 2), child: Align(alignment: Alignment.centerRight, child: Text("Yıl | Kont. | Puan | Sıra", style: TextStyle(color: Colors.grey, fontSize: 9, fontWeight: FontWeight.bold))));
 
   void _toggleSort(String f) {
     setState(() {

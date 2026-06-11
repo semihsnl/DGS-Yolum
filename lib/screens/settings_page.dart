@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -72,7 +73,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             
             const SizedBox(height: 40),
-            const Center(child: Text("DGS Yolum v1.0.4", style: TextStyle(color: Colors.white24, fontSize: 12))),
+            const Center(child: Text("DGS Yolum v1.0.0", style: TextStyle(color: Colors.white24, fontSize: 12))),
           ],
         ),
       ),
@@ -127,7 +128,6 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildDivider() => Divider(color: Colors.white.withOpacity(0.03), height: 1, indent: 55);
 }
 
-// --- GÜNCEL KULLANICI DETAYLARINI HAFIZAYA BAĞLAYAN SAYFA ---
 class ProfileSettingsPage extends StatefulWidget {
   const ProfileSettingsPage({super.key});
 
@@ -143,29 +143,28 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
   @override
   void initState() {
     super.initState();
-    _loadProfileData(); // Açılışta kalıcı verileri getir
+    _loadProfileData();
   }
 
   Future<void> _loadProfileData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _nameController.text = prefs.getString('saved_name') ?? "Yazılım Mühendisi Adayı";
-      _obpController.text = prefs.getString('saved_obp') ?? "40.0"; // Diğer sayfa ile senkronize anahtar
-      _targetController.text = prefs.getString('saved_target') ?? "Bilgisayar Mühendisliği";
+      _nameController.text = prefs.getString('saved_name') ?? "";
+      _obpController.text = prefs.getString('saved_obp') ?? "";
+      _targetController.text = prefs.getString('saved_target') ?? "";
     });
   }
 
   Future<void> _saveProfileData() async {
     final prefs = await SharedPreferences.getInstance();
     
-    // ÖBP için sınır kontrolü yapalım (40-80 arası)
     double obpVal = double.tryParse(_obpController.text) ?? 40.0;
     if (obpVal < 40) obpVal = 40;
     if (obpVal > 80) obpVal = 80;
     String formattedObp = obpVal.toStringAsFixed(1);
 
     await prefs.setString('saved_name', _nameController.text);
-    await prefs.setString('saved_obp', formattedObp); // Ortak kilit veri buraya yazılıyor
+    await prefs.setString('saved_obp', formattedObp);
     await prefs.setString('saved_target', _targetController.text);
 
     if (mounted) {
@@ -206,11 +205,11 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
               ),
             ),
             const SizedBox(height: 30),
-            _buildInputField("Ad Soyad", _nameController, TextInputType.text),
+            _buildInputField("Ad Soyad", _nameController, TextInputType.text, isObp: false),
             const SizedBox(height: 15),
-            _buildInputField("ÖBP Puanı (40 - 80 Arası)", _obpController, TextInputType.number),
+            _buildInputField("ÖBP Puanı (40 - 80 Arası)", _obpController, const TextInputType.numberWithOptions(decimal: true), isObp: true),
             const SizedBox(height: 15),
-            _buildInputField("Hedef Bölüm / Üniversite", _targetController, TextInputType.text),
+            _buildInputField("Hedef Bölüm / Üniversite", _targetController, TextInputType.text, isObp: false),
             const SizedBox(height: 35),
             SizedBox(
               width: double.infinity,
@@ -230,7 +229,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
     );
   }
 
-  Widget _buildInputField(String label, TextEditingController controller, TextInputType type) {
+  Widget _buildInputField(String label, TextEditingController controller, TextInputType type, {required bool isObp}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -239,6 +238,18 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
         TextField(
           controller: controller,
           keyboardType: type,
+          inputFormatters: [
+            if (isObp) FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+          ],
+          onChanged: (value) {
+            if (isObp && value.isNotEmpty) {
+              double? currentVal = double.tryParse(value);
+              if (currentVal != null && currentVal > 80) {
+                controller.text = "80";
+                controller.selection = TextSelection.fromPosition(const TextPosition(offset: 2));
+              }
+            }
+          },
           style: const TextStyle(color: Colors.white, fontSize: 14),
           decoration: InputDecoration(
             filled: true,
@@ -252,11 +263,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
   }
 }
 
-// --- RESMİ KAYNAKLAR ALT SAYFASI ---
 class OfficialSourcesPage extends StatelessWidget {
   const OfficialSourcesPage({super.key});
 
-  // URL'leri güvenli şekilde açmak için yardımcı fonksiyon
   Future<void> _launchURL(BuildContext context, String urlString) async {
     final Uri url = Uri.parse(urlString);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
@@ -345,7 +354,6 @@ class OfficialSourcesPage extends StatelessWidget {
   }
 }
 
-// --- SIKÇA SORULAN SORULAR (FAQ) ---
 class FAQPage extends StatelessWidget {
   const FAQPage({super.key});
 
@@ -383,9 +391,68 @@ class FAQPage extends StatelessWidget {
   }
 }
 
-// --- BİZE ULAŞIN ---
-class ContactPage extends StatelessWidget {
+// 🎯 GÜNCELLENEN KISIM: BİZE ULAŞIN SAYFASI GERÇEK MAİL ENTEGRASYONU
+class ContactPage extends StatefulWidget {
   const ContactPage({super.key});
+
+  @override
+  State<ContactPage> createState() => _ContactPageState();
+}
+
+class _ContactPageState extends State<ContactPage> {
+  // Yazılan metinleri kontrol etmek için Controller'ları tanımlıyoruz
+  final _subjectController = TextEditingController();
+  final _messageController = TextEditingController();
+
+  Future<void> _sendEmail() async {
+    final String subjectText = _subjectController.text.trim();
+    final String messageText = _messageController.text.trim();
+
+    if (subjectText.isEmpty || messageText.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Lütfen tüm alanları doldurun!")),
+      );
+      return;
+    }
+
+    // 🔴 BURAYA KENDİ ŞAHSİ MAİL ADRESİNİ YAZ SEMİH
+    const String myEmail = "semih.snel@gmail.com"; 
+
+    // Mail link şablonunu oluşturup Türkçe karakter uyumlu şifreliyoruz
+    final Uri emailLaunchUri = Uri(
+      scheme: 'mailto',
+      path: myEmail,
+      queryParameters: {
+        'subject': '[DGS Yolum Destek] $subjectText',
+        'body': messageText,
+      },
+    );
+
+    try {
+      if (await launchUrl(emailLaunchUri)) {
+        if (mounted) {
+          _subjectController.clear();
+          _messageController.clear();
+          Navigator.pop(context);
+        }
+      } else {
+        throw 'Mail uygulaması açılamadı';
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Cihazınızda kayıtlı bir mail uygulaması bulunamadı!")),
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _subjectController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -396,9 +463,9 @@ class ContactPage extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            _buildTextField("Konu", "Mesajınızın konusu", 1),
+            _buildTextField("Konu", "Mesajınızın konusu", 1, _subjectController),
             const SizedBox(height: 15),
-            _buildTextField("Mesaj", "Lütfen geri bildiriminizi buraya yazın...", 5),
+            _buildTextField("Mesaj", "Lütfen geri bildiriminizi buraya yazın...", 5, _messageController),
             const SizedBox(height: 30),
             SizedBox(
               width: double.infinity,
@@ -408,10 +475,7 @@ class ContactPage extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                 ),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Mesajınız iletildi!")));
-                  Navigator.pop(context);
-                },
+                onPressed: _sendEmail, // Yenilenen fonksiyon bağlandı
                 child: const Text("Gönder", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ),
             )
@@ -421,13 +485,14 @@ class ContactPage extends StatelessWidget {
     );
   }
 
-  Widget _buildTextField(String label, String hint, int lines) {
+  Widget _buildTextField(String label, String hint, int lines, TextEditingController controller) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: const TextStyle(color: Colors.white70, fontSize: 14)),
         const SizedBox(height: 8),
         TextField(
+          controller: controller, // Controller bağlandı
           maxLines: lines,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
@@ -443,7 +508,6 @@ class ContactPage extends StatelessWidget {
   }
 }
 
-// --- KULLANIM KOŞULLARI ---
 class TermsPage extends StatelessWidget {
   const TermsPage({super.key});
 
@@ -466,7 +530,6 @@ class TermsPage extends StatelessWidget {
   }
 }
 
-// --- GIZLILIK POLITIKASI ---
 class PrivacyPage extends StatelessWidget {
   const PrivacyPage({super.key});
 
