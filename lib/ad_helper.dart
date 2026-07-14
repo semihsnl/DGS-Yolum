@@ -1,20 +1,34 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart'; // kIsWeb kontrolü için gerekli
+import 'package:flutter/foundation.dart'; // kIsWeb kontrolü için
 
 class AdHelper {
-  static String get bannerAdUnitId {
-    // Eğer uygulama şu an WEB (Chrome/Safari) üzerinde çalışıyorsa boş dönsün ve çökmesin
-    if (kIsWeb) {
-      return ''; 
-    }
-    
-    // Mobil cihaz kontrolü
+  // 🟢 1. ANASAYFA BANNER REKLAM ID'Sİ
+  static String get homeBannerAdUnitId {
+    if (kIsWeb) return ''; // Web üzerinde çalışıyorsa boş dönsün, çökmesin.
+
     if (Platform.isAndroid) {
+      // 🚀 GERÇEK REKLAM AKTİF EDİLDİ:
       return 'ca-app-pub-9529454395013506/8327029846';
-    } else if (Platform.isIOS) {
-      return 'ca-app-pub-3940256099942544/2934735716';
+      
+      // 🔬 Test ID'si kapatıldı:
+      // return 'ca-app-pub-3940256099942544/6300978111'; 
     } else {
-      throw UnsupportedError('Bu platformda reklam desteklenmiyor');
+      return '';
+    }
+  }
+
+  // 🟢 2. ÜNİVERSİTE TABAN PUANLARI SAYFASI BANNER REKLAM ID'Sİ
+  static String get universityBannerAdUnitId {
+    if (kIsWeb) return ''; 
+
+    if (Platform.isAndroid) {
+      // 🚀 GERÇEK REKLAM AKTİF EDİLDİ:
+      return 'ca-app-pub-9529454395013506/3248203768';
+      
+      // 🔬 Test ID'si kapatıldı:
+      // return 'ca-app-pub-3940256099942544/6300978111';
+    } else {
+      return '';
     }
   }
 }

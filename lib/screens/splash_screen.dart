@@ -166,7 +166,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 20.0),
                 child: Text(
-                  "v1.0.4",
+                  "v1.0.2",
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.25),
                     fontSize: 12,

@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart'; // AdMob kütüphanesi
 import '../models/exam_result.dart';
 import 'preferred_list_page.dart';
+import '../ad_helper.dart';
 
 class BasePointsPage extends StatefulWidget {
   const BasePointsPage({super.key});
@@ -39,11 +41,43 @@ class _BasePointsPageState extends State<BasePointsPage> {
   SortType _siraSort = SortType.none;
   final TextEditingController _searchController = TextEditingController();
 
+  // AdMob Reklam Değişkenleri
+  BannerAd? _bannerAd;
+  bool _isBannerAdLoaded = false;
+
   @override
   void initState() {
     super.initState();
     _loadDataFromAssets();
     _loadFavorites();
+    _loadTestBannerAd(); // Sayfa açılır açılmaz emülatör için test reklamını yükler
+  }
+
+  // Güvenli AdMob Test Reklamı Yükleme Fonksiyonu
+  void _loadTestBannerAd() {
+    BannerAd(
+      adUnitId: AdHelper.universityBannerAdUnitId,
+      request: const AdRequest(),
+      size: AdSize.banner,
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          setState(() { 
+            _bannerAd = ad as BannerAd;
+            _isBannerAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, err) {
+          debugPrint('Test Banner yüklenemedi: ${err.message}');
+          ad.dispose();
+        },
+      ),
+    ).load();
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose(); // Sayfa kapatıldığında belleği temizler
+    super.dispose();
   }
 
   // Türkçe karakter duyarlı küçük harfe çevirme fonksiyonu
@@ -171,62 +205,73 @@ class _BasePointsPageState extends State<BasePointsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F111A),
-      appBar: AppBar(
+    return WillPopScope(
+      onWillPop: () async => true,
+      child: Scaffold(
         backgroundColor: const Color(0xFF0F111A),
-        elevation: 0,
-        toolbarHeight: 45,
-        title: const Text("Taban Sıralama ve Puanlar", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.format_list_numbered, color: Colors.amber, size: 20),
-            onPressed: () async {
-              await Navigator.push(context, MaterialPageRoute(builder: (context) => const PreferredListPage()));
-              _loadFavorites();
-            },
-          )
-        ],
-      ),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator(color: Color(0xFF00D26A)))
-        : Column(
-            children: [
-              _buildAutocompleteSearch(),
-              _buildSelectedChips(),
-              
-              // 🎯 1. Satır: Üniversite Türü Filtresi (Tümü, Devlet, Vakıf)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                child: Container(
-                  alignment: Alignment.centerLeft,
-                  child: _buildFilterArea(),
-                ),
-              ),
-
-              // 🎯 2. Satır: Dil Filtresi (Türkçe, İngilizce) - Hemen altına tam satır olarak eklendi
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                child: Container(
-                  alignment: Alignment.centerLeft,
-                  child: _buildLanguageFilters(),
-                ),
-              ),
-              
-              _buildSortingBar(),
-              _buildInfoBanner(),
-              Expanded(
-                child: _filteredData.isEmpty 
-                ? const Center(child: Text("Sonuç bulunamadı.", style: TextStyle(color: Colors.white54)))
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    itemCount: _filteredData.length,
-                    itemBuilder: (context, index) => _buildUniDetailCard(_filteredData[index]),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF0F111A),
+          elevation: 0,
+          toolbarHeight: 45,
+          title: const Text("Taban Sıralama ve Puanlar", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.format_list_numbered, color: Colors.amber, size: 20),
+              onPressed: () async {
+                await Navigator.push(context, MaterialPageRoute(builder: (context) => const PreferredListPage()));
+                _loadFavorites();
+              },
+            )
+          ],
+        ),
+        body: _isLoading 
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF00D26A)))
+          : Column(
+              children: [
+                _buildAutocompleteSearch(),
+                _buildSelectedChips(),
+                
+                // 🎯 1. Satır: Üniversite Türü Filtresi (Tümü, Devlet, Vakıf)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                  child: Container(
+                    alignment: Alignment.centerLeft,
+                    child: _buildFilterArea(),
                   ),
-              ),
-            ],
-          ),
+                ),
+  
+                // 🎯 2. Satır: Dil Filtresi (Türkçe, İngilizce)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                  child: Container(
+                    alignment: Alignment.centerLeft,
+                    child: _buildLanguageFilters(),
+                  ),
+                ),
+                
+                _buildSortingBar(),
+                _buildInfoBanner(),
+                Expanded(
+                  child: _filteredData.isEmpty 
+                  ? const Center(child: Text("Sonuç bulunamadı.", style: TextStyle(color: Colors.white54)))
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      itemCount: _filteredData.length,
+                      itemBuilder: (context, index) => _buildUniDetailCard(_filteredData[index]),
+                    ),
+                ),
+              ],
+            ),
+        // 🟢 REKLAM BURADA SABİT: Liste ne kadar kayarsa kaysın, reklam hep en altta çakılı durur.
+        bottomNavigationBar: _isBannerAdLoaded && _bannerAd != null
+            ? SizedBox(
+                width: _bannerAd!.size.width.toDouble(),
+                height: _bannerAd!.size.height.toDouble(),
+                child: AdWidget(ad: _bannerAd!),
+              )
+            : const SizedBox.shrink(),
+      ),
     );
   }
 
@@ -249,8 +294,7 @@ class _BasePointsPageState extends State<BasePointsPage> {
             Container(
               width: 32,
               decoration: BoxDecoration(color: typeColor, borderRadius: const BorderRadius.only(topLeft: Radius.circular(15), bottomLeft: Radius.circular(15))),
-              child: Center(child: RotatedBox(quarterTurns: 3, child: Text(data['tur'], style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)))),
-            ),
+              child: Center(child: RotatedBox(quarterTurns: 3, child: Text(data['tur'], style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold))))),
             
             Expanded(
               child: Padding(
@@ -291,7 +335,6 @@ class _BasePointsPageState extends State<BasePointsPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(y.length > 4 ? 4 : y.length, (i) {
-                  // 🛡️ MANTIK FILTRESI: Çekim hatası olan uçuk gelecek yılları (2027 v.b) çalışma zamanında gizler.
                   if (int.tryParse(y[i]) != null && int.parse(y[i]) > 2026) {
                     return const SizedBox.shrink();
                   }
@@ -480,7 +523,7 @@ class _BasePointsPageState extends State<BasePointsPage> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: ["Türkçe", "İngilizce"].map((l) => Padding(
-          padding: const EdgeInsets.only(right: 4), // Yan yana butonlar arası ideal boşluk
+          padding: const EdgeInsets.only(right: 4),
           child: FilterChip(
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             visualDensity: VisualDensity.compact,

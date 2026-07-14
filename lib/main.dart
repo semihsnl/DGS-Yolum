@@ -11,7 +11,7 @@ void main() {
   
   // Üstteki bildirim çubuğunu tamamen gizler (Ekran görüntüsü için en temiz yöntem)
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-  MobileAds.instance.initialize();
+  // MobileAds.instance.initialize();
   
   runApp(const MyApp());
 }

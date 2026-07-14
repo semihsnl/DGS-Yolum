@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:wakelock_plus/wakelock_plus.dart'; // 🟢 Wakelock paketi eklendi
 import 'net_calculation_page.dart';
 
 class FullExamPage extends StatefulWidget {
@@ -20,33 +21,39 @@ class _FullExamPageState extends State<FullExamPage> {
   void dispose() {
     _timer?.cancel();
     _audioPlayer.dispose();
+    WakelockPlus.disable(); // 🔴 EMNIYYET KİLİDİ: Sayfadan aniden çıkılırsa ekran kilidini kaldır
     super.dispose();
   }
 
   Future<bool> _onWillPop() async {
     return await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1C1E26),
-        title: const Text("Sınavdan Çıkılsın mı?", style: TextStyle(color: Colors.white)),
-        content: const Text("Sınavdan çıkmak istediğinize emin misiniz? İlerlemeniz kaybolacaktır.", style: TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("İPTAL", style: TextStyle(color: Colors.grey))),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("ÇIK", style: TextStyle(color: Colors.red))),
-        ],
-      ),
-    ) ?? false;
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: const Color(0xFF1C1E26),
+            title: const Text("Sınavdan Çıkılsın mı?", style: TextStyle(color: Colors.white)),
+            content: const Text("Sınavdan çıkmak istediğinize emin misiniz? İlerlemeniz kaybolacaktır.", style: TextStyle(color: Colors.white70)),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("İPTAL", style: TextStyle(color: Colors.grey))),
+              TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("ÇIK", style: TextStyle(color: Colors.red))),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   void _startTimer() {
     if (_isRunning) return;
     setState(() => _isRunning = true);
+    
+    WakelockPlus.enable(); // 🟢 EKRAN KİLİDİNİ AÇ: Sınav süresince ekranın kapanmasını engelle
+
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_secondsRemaining > 0) {
         setState(() => _secondsRemaining--);
       } else {
         timer.cancel();
         setState(() => _isRunning = false);
+        WakelockPlus.disable(); // 🔴 EKRAN KİLİDİNİ KALDIR: Sınav bittiğinde sistemi normale döndür
         _playFinalAlarm();
       }
     });
@@ -55,13 +62,16 @@ class _FullExamPageState extends State<FullExamPage> {
   void _pauseTimer() {
     _timer?.cancel();
     setState(() => _isRunning = false);
+    WakelockPlus.disable(); // 🔴 EKRAN KİLİDİNİ KALDIR: Sınav durdurulduğunda pil tasarrufu için kilidi kapat
   }
 
   Future<void> _playFinalAlarm() async {
     try {
       await _audioPlayer.setReleaseMode(ReleaseMode.loop);
       await _audioPlayer.play(AssetSource('alarm.mp3'));
-    } catch (e) { debugPrint(e.toString()); }
+    } catch (e) {
+      debugPrint(e.toString());
+    }
     _showFinishDialog();
   }
 
@@ -116,7 +126,6 @@ class _FullExamPageState extends State<FullExamPage> {
     );
   }
 
-  // GÜNCELLEME: Saniyeyi Saat:Dakika:Saniye formatına çeviren yardımcı metot
   String _formatLongTime(int totalSeconds) {
     int hours = totalSeconds ~/ 3600;
     int minutes = (totalSeconds % 3600) ~/ 60;
@@ -149,9 +158,8 @@ class _FullExamPageState extends State<FullExamPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // GÜNCELLEME: Yeni saatli format buraya bağlandı
               Text(
-                _formatLongTime(_secondsRemaining), 
+                _formatLongTime(_secondsRemaining),
                 style: const TextStyle(fontSize: 70, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 2),
               ),
               const SizedBox(height: 50),
@@ -168,8 +176,8 @@ class _FullExamPageState extends State<FullExamPage> {
   }
 
   Widget _actionBtn(VoidCallback? on, String l, Color c) => ElevatedButton(
-    onPressed: on, 
-    style: ElevatedButton.styleFrom(backgroundColor: c, padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-    child: Text(l, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-  );
+        onPressed: on,
+        style: ElevatedButton.styleFrom(backgroundColor: c, padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+        child: Text(l, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      );
 }

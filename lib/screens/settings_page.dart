@@ -73,7 +73,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             
             const SizedBox(height: 40),
-            const Center(child: Text("DGS Yolum v1.0.0", style: TextStyle(color: Colors.white24, fontSize: 12))),
+            const Center(child: Text("DGS Yolum v1.0.2", style: TextStyle(color: Colors.white24, fontSize: 12))),
           ],
         ),
       ),

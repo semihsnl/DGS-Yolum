@@ -2,10 +2,16 @@
     <application
         android:label="DGS Yolum"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"> <meta-data
+        android:icon="@mipmap/ic_launcher">
+        
+        <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-9529454395013506~5094361841"/>
         
+        <meta-data 
+            android:name="io.flutter.embedding.android.EnableImpeller" 
+            android:value="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -15,15 +21,17 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
+            
             <meta-data
               android:name="io.flutter.embedding.android.NormalTheme"
-              android:resource="@style/NormalTheme"
-              />
+              android:resource="@style/NormalTheme" />
+              
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

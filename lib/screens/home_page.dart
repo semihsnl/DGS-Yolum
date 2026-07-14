@@ -39,7 +39,7 @@ class _HomePageState extends State<HomePage> {
   // Reklamı yükleyen yardımcı fonksiyon
   void _initBannerAd() {
     BannerAd(
-      adUnitId: AdHelper.bannerAdUnitId,
+      adUnitId: AdHelper.homeBannerAdUnitId,
       request: const AdRequest(),
       size: AdSize.banner,
       listener: BannerAdListener(
@@ -621,13 +621,30 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildDgsCountdown() {
+    final int days = _daysRemaining;
+    final bool isExamPassed = days < 0; // Sınav geçtiyse true olur
+
     return Column(
       children: [
-        const Text("DGS'YE KALAN SÜRE", style: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: 1.2)),
+        Text(
+          isExamPassed ? "BİLGİLENDİRME" : "DGS'YE KALAN SÜRE",
+          style: const TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: 1.2),
+        ),
         const SizedBox(height: 10),
-        Text("$_daysRemaining Gün", style: const TextStyle(color: Colors.white, fontSize: 42, fontWeight: FontWeight.w900)),
+        Text(
+          isExamPassed ? "Yeni Sınav Takvimi\nAçıklanması Bekleniyor" : "$days Gün",
+          textAlign: TextAlign.center, // Uzun yazı gelirse ortalı dursun
+          style: TextStyle(
+            color: Colors.white, 
+            fontSize: isExamPassed ? 22 : 42, // Yazı uzunsa 22 punto, gün sayıyorsa 42 punto olsun
+            fontWeight: FontWeight.w900,
+          ),
+        ),
         const SizedBox(height: 5),
-        const Text("19 Temmuz 2026", style: TextStyle(color: Color(0xFF6DC4A7), fontSize: 14, fontWeight: FontWeight.w500)),
+        Text(
+          isExamPassed ? "ÖSYM takvimi takip ediliyor" : "19 Temmuz 2026",
+          style: const TextStyle(color: Color(0xFF6DC4A7), fontSize: 14, fontWeight: FontWeight.w500),
+        ),
       ],
     );
   }

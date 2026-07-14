@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:wakelock_plus/wakelock_plus.dart'; // 🟢 Wakelock paketi eklendi
 import 'net_calculation_page.dart';
 
 class CustomModeScreen extends StatefulWidget {
@@ -36,6 +37,7 @@ class _CustomModeScreenState extends State<CustomModeScreen> {
   void dispose() {
     _timer?.cancel();
     _audioPlayer.dispose();
+    WakelockPlus.disable(); // 🔴 EMNİYET KİLİDİ: Sayfadan aniden çıkılırsa ekran kilitlenme modunu kesinlikle kapat
     super.dispose();
   }
 
@@ -116,6 +118,7 @@ class _CustomModeScreenState extends State<CustomModeScreen> {
 
   void _finishExamSequence() {
     setState(() => _isRunning = false);
+    WakelockPlus.disable(); // 🔴 EKRAN KİLİDİNİ KALDIR: Süre bitti, sistem normal zaman aşımına dönebilir
     try {
       _audioPlayer.setReleaseMode(ReleaseMode.loop);
       _audioPlayer.play(AssetSource('alarm.mp3'));
@@ -302,6 +305,8 @@ class _CustomModeScreenState extends State<CustomModeScreen> {
                   _isFirstSubjectFinished = false;
                   _currentTab = _startSubject; 
                 });
+                
+                WakelockPlus.enable(); // 🟢 EKRAN KİLİDİNİ AÇ: Özel sınav başladığında ekran kapanmasını önle
                 _startCountdownLogic();
               },
               child: const Text("ÖZEL SINAVI BAŞLAT", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1.2)),
@@ -377,7 +382,11 @@ class _CustomModeScreenState extends State<CustomModeScreen> {
                 // 1. BUTON: Başlat / Devam Et
                 Expanded(
                   child: _actionBtn(
-                    _isRunning ? null : () { setState(() => _isRunning = true); _startCountdownLogic(); }, 
+                    _isRunning ? null : () { 
+                      setState(() => _isRunning = true); 
+                      WakelockPlus.enable(); // 🟢 EKRAN KİLİDİNİ AÇ: Sayaca devam edildiğinde kilidi tekrar aktif et
+                      _startCountdownLogic(); 
+                    }, 
                     "Devam", 
                     Colors.green
                   ),
@@ -387,7 +396,11 @@ class _CustomModeScreenState extends State<CustomModeScreen> {
                 // 2. BUTON: Durdur
                 Expanded(
                   child: _actionBtn(
-                    _isRunning ? () { _timer?.cancel(); setState(() => _isRunning = false); } : null, 
+                    _isRunning ? () { 
+                      _timer?.cancel(); 
+                      setState(() => _isRunning = false); 
+                      WakelockPlus.disable(); // 🔴 EKRAN KİLİDİNİ KALDIR: Sayaç duraklatıldığında pil tasarrufu için kilidi kaldır
+                    } : null, 
                     "Durdur", 
                     Colors.red
                   ),

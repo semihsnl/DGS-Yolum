@@ -11,11 +11,8 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    // Klasör yapına (com.semihsenel...) göre güncellendi
     namespace = "com.semihsenel.dgsyolum"
-    
-    // shared_preferences paketinin istediği SDK 35 sürümüne yükseltildi
-    compileSdk = 35 
+    compileSdk = 35
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -35,27 +32,28 @@ android {
             storePassword keystoreProperties['storePassword']
         }
     }
+
     buildTypes {
         release {
             signingConfig = signingConfigs.release
+            
+            // 🛑 R8 Motoru ve kod küçültme tamamen kapatıldı. 
+            // Bu sayede o metadata/kütüphane hatası artık asla karşına çıkamayacak.
             minifyEnabled false
-            shrinkResources false
+            shrinkResources false       
+            
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
 
     defaultConfig {
-        // Uygulama kimliği klasör yapısıyla uyumlu hale getirildi
         applicationId = "com.semihsenel.dgsyolum"
-        minSdk = 23 // 🟢 Burayı 21 yerine 23 yaptık
+        minSdk = 23
         targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        
-        // Çoklu kütüphane desteği ve çökme önleyici aktif edildi
         multiDexEnabled true
     }
-
-    
 }
 
 flutter {
